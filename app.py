@@ -11,23 +11,27 @@ st.set_page_config(
     layout="wide"
 )
 
-# Боковая панель для настроек
+# Пытаемся получить ключ из секретов Streamlit Cloud
+# Если запутаете локально, можно подставить запасной вариант или оставить поле
+server_api_key = st.secrets.get("GEMINI_API_KEY", "")
+
+# Боковая панель для настроек (теперь чистая и красивая)
 with st.sidebar:
-    st.header("⚙️ Настройки анализа")
-    api_key_input = st.text_input(
-        "Gemini API Key", 
-        type="password", 
-        placeholder="AIzaSy...",
-        help="Получите бесплатный ключ в Google AI Studio (aistudio.google.com)"
-    )
+    st.header("⚙️ О проекте")
+    st.markdown("**VeritasAI** — интеллектуальная система анализа студенческих работ на базе Google Gemini.")
     st.markdown("---")
     st.markdown("### Инструкция:")
-    st.markdown("1. Введите ваш ключ Gemini и нажмите Enter.")
-    st.markdown("2. Вставьте текст или загрузите документ.")
-    st.markdown("3. Нажмите кнопку запуска проверки.")
+    st.markdown("1. Вставьте текст или загрузите документ.")
+    st.markdown("2. Нажмите кнопку запуска проверки.")
+    
+    # Если ключ на сервере не задан, оставляем поле для ввода (удобно для локального теста)
+    if not server_api_key:
+        api_key_input = st.text_input("Gemini API Key", type="password")
+    else:
+        api_key_input = server_api_key
 
 st.title("🛡️ VeritasAI: Академический антиплагиат и детектор ИИ")
-st.markdown("Интеллектуальная система анализа студенческих работ на базе Google Gemini.")
+st.markdown("Инструмент анализа курсовых, дипломов и эссе на наличие маркеров генерации искусственным интеллектом.")
 
 # Ввод текста
 tab1, tab2 = st.tabs(["📝 Вставить текст вручную", "📁 Загрузить документ (PDF / Word / TXT)"])
@@ -63,13 +67,13 @@ st.markdown("---")
 # Кнопка проверки
 if st.button("🔍 Запустить глубокий анализ", type="primary", use_container_width=True):
     if not api_key_input.strip():
-        st.error("⚠️ Пожалуйста, укажите ваш Gemini API Key в боковой панели слева!")
+        st.error("⚠️ API-ключ не настроен на сервере. Обратитесь к администратору проекта.")
     elif not extracted_text.strip():
         st.warning("⚠️ Текст для анализа пустой. Введите текст или загрузите документ.")
     else:
         with st.spinner("Модель Gemini анализирует структуру текста и маркеры ИИ..."):
             try:
-                # Инициализация официального клиента Gemini
+                # Инициализация клиента Gemini
                 client = genai.Client(api_key=api_key_input)
                 
                 prompt = f"""
@@ -86,7 +90,6 @@ if st.button("🔍 Запустить глубокий анализ", type="prim
                 {extracted_text}
                 """
 
-                # Запрос к быстрой и умной модели Gemini 2.5 Flash
                 response = client.models.generate_content(
                     model='gemini-2.5-flash',
                     contents=prompt,
